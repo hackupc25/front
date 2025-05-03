@@ -1,124 +1,131 @@
 "use client";
 import { useState } from "react";
-import { CryptoChart } from "../components/ui/crypto-chart";
-import { PortfolioSummary } from "../components/ui/portfolio-summary";
-import { QuestionModal } from "../components/ui/question-modal";
-import { fetch_coin_situation, CoinSituation, fetch_finance_question } from "../lib/game-service";
-import { post_situation_answer, post_finance_answer } from "../lib/situation-service";
-import { SESSION_ID } from "../lib/costants";
+import { useRouter } from "next/navigation";
+import { create_game, fetch_user_info } from "../lib/game-service";
+import { useActiveUser } from "../lib/active-user-context";
 
+export default function MainPage() {
+  const [playerName, setPlayerName] = useState("");
+  const [coinName, setCoinName] = useState("");
+  const [players, setPlayers] = useState<{ name: string; coin: string }[]>([]);
+  const [joinName, setJoinName] = useState("");
+  const router = useRouter();
+  const { activeUser, setActiveUser } = useActiveUser();
 
-export default function Home() {
-  const [modalOpen, setModalOpen] = useState<null | "decision" | "learning">(null);
-  const [modalQuestion, setModalQuestion] = useState<{
-    question: string;
-    answers: string[];
-    situationId?: number;
-    answerIds?: string[];
-  } | null>(null);
-  const [loadingModal, setLoadingModal] = useState(false);
-  const [modalFeedback, setModalFeedback] = useState<null | { correct: string; explanation: string }> (null);
-
-  // Simula obtener la primera moneda (en real, deberías obtenerla del backend o del estado global)
-  const firstCoin = "BitCoin";
-
-  const handleOpen = async (type: "decision" | "learning") => {
-    setModalOpen(type);
-    setLoadingModal(true);
-    if (type === "decision") {
-      try {
-        const situation: CoinSituation = await fetch_coin_situation(SESSION_ID, firstCoin);
-        setModalQuestion({
-          question: situation.situation,
-          answers: situation.choices.map(c => c.text),
-          situationId: situation.id,
-          answerIds: situation.choices.map(c => c.id),
-        });
-      } catch (e) {
-        setModalQuestion({
-          question: "No se pudo cargar la situación.",
-          answers: ["Cerrar"],
-        });
-      }
-    } else {
-      try {
-        const finance = await fetch_finance_question(SESSION_ID, firstCoin);
-        setModalQuestion({
-          question: finance.question,
-          answers: finance.options,
-        });
-      } catch (e) {
-        setModalQuestion({
-          question: "No se pudo cargar la pregunta.",
-          answers: ["Cerrar"],
-        });
-      }
+  const handleAdd = () => {
+    if (playerName.trim() && coinName.trim()) {
+      setPlayers([...players, { name: playerName.trim(), coin: coinName.trim() }]);
+      setPlayerName("");
+      setCoinName("");
     }
-    setLoadingModal(false);
   };
 
-  const handleClose = () => {
-    setModalOpen(null);
-    setModalQuestion(null);
-    setModalFeedback(null);
+  const handleJoin = async () => {
+    try {
+      const user = await fetch_user_info(joinName.trim());
+      setActiveUser({
+        sessionId: user.session_id,
+        userName: user.name,
+        coinName: user.coin,
+      });
+      router.push(`/game/${user.session_id}`);
+    } catch (e) {
+      alert("Error joining game");
+    }
+    setJoinName("");
   };
 
-  const handleConfirm = async (answer: string) => {
-    if (modalOpen === "decision" && modalQuestion?.situationId && modalQuestion?.answerIds) {
-      const idx = modalQuestion.answers.findIndex(a => a === answer);
-      const answerId = modalQuestion.answerIds[idx];
-      try {
-        await post_situation_answer(modalQuestion.situationId, answerId);
-      } catch (e) {
-        // Podrías manejar el error aquí si lo deseas
-      }
-      setModalOpen(null);
-      setModalQuestion(null);
-    } else if (modalOpen === "learning" && modalQuestion?.answers) {
-      const idx = modalQuestion.answers.findIndex(a => a === answer);
-      const answerLetter = ["A", "B", "C", "D"][idx];
-      try {
-        const res = await post_finance_answer(SESSION_ID, answerLetter);
-        setModalFeedback({
-          correct: res.correct_answer,
-          explanation: res.explanation,
-        });
-      } catch (e) {
-        setModalFeedback({
-          correct: "",
-          explanation: "No se pudo obtener la explicación.",
+  const handleStartGame = async () => {
+    try {
+      const response = await create_game(players.map(p => ({ player_name: p.name, coin_name: p.coin })));
+      const sessionId = response.session_id;
+      if (players.length > 0) {
+        setActiveUser({
+          sessionId,
+          userName: players[0].name,
+          coinName: players[0].coin,
         });
       }
+      router.push(`/game/${sessionId}`);
+    } catch (e) {
+      alert("Error creating game");
     }
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-start bg-background dark:bg-[#101014] pb-12">
-      <div className="w-full flex flex-col items-center">
-        <div className="w-full max-w-6xl flex flex-col md:flex-row gap-2 mt-12 items-center md:items-start justify-center">
-          {/* Columna izquierda: Summary */}
-          <div className="flex-1 flex flex-col min-h-[500px] min-w-[280px] max-w-sm justify-between h-full">
-            <PortfolioSummary />
-            <div className="flex flex-row gap-3 mt-2 w-full">
-              <button className="flex-1 py-3 rounded-lg bg-blue-500 hover:bg-blue-400 text-white font-semibold text-base transition" onClick={() => handleOpen("decision")}>Daily Decision</button>
-              <button className="flex-1 py-3 rounded-lg bg-orange-500 hover:bg-orange-400 text-white font-semibold text-base transition" onClick={() => handleOpen("learning")}>Daily Learning</button>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-background dark:bg-[#101014] px-4">
+      <h1 className="text-6xl md:text-8xl font-extrabold text-center text-primary drop-shadow-lg mb-12">
+        Coinpetition
+      </h1>
+      <div className="flex flex-col items-center w-full max-w-md gap-4">
+        <div className="flex w-full gap-2">
+          <div className="flex flex-col w-full gap-2">
+            <div className="flex w-full gap-2">
+              <input
+                type="text"
+                placeholder="Player name"
+                className="flex-1 px-4 py-2 rounded-lg border border-border bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                value={playerName}
+                onChange={e => setPlayerName(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Coin name"
+                className="flex-1 px-4 py-2 rounded-lg border border-border bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                value={coinName}
+                onChange={e => setCoinName(e.target.value)}
+              />
             </div>
-          </div>
-          {/* Columna derecha: Gráfica */}
-          <div className="flex-[2] min-w-0">
-            <CryptoChart />
+            <button
+              className={`w-full px-6 py-2 rounded-lg font-semibold text-base transition disabled:opacity-50 ${playerName.trim() && coinName.trim() ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
+              onClick={handleAdd}
+              disabled={!playerName.trim() || !coinName.trim()}
+            >
+              Add
+            </button>
           </div>
         </div>
+        {players.length === 0 && (
+          <div className="w-full flex flex-col items-center gap-2 mt-6">
+            <span className="text-lg text-muted-foreground font-medium">Trying to join a game?</span>
+            <div className="w-full flex flex-col items-center gap-2">
+              <input
+                type="text"
+                placeholder="Your name"
+                className="w-full px-4 py-2 rounded-lg border border-border bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                value={joinName}
+                onChange={e => setJoinName(e.target.value)}
+              />
+              <button
+                className={`w-full px-6 py-2 rounded-lg font-semibold text-base transition ${joinName.trim() ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
+                onClick={handleJoin}
+                disabled={!joinName.trim()}
+              >
+                Join
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="w-full mt-8">
+          {players.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {players.map((p, idx) => (
+                <li key={idx} className="flex justify-between items-center px-4 py-2 rounded-lg bg-muted text-foreground border border-border">
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-primary font-mono">{p.coin}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <button
+          className="mt-8 w-full py-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xl font-bold shadow-lg transition disabled:opacity-50"
+          disabled={players.length === 0}
+          onClick={handleStartGame}
+        >
+          Start Game
+        </button>
       </div>
-      <QuestionModal
-        open={modalOpen !== null}
-        onClose={handleClose}
-        onConfirm={handleConfirm}
-        question={modalQuestion?.question}
-        answers={modalQuestion?.answers}
-        loading={loadingModal}
-        feedback={modalFeedback}
-      />
     </main>
   );
 } 

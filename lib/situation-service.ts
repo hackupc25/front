@@ -14,9 +14,12 @@ export async function post_situation_answer(situation_id: number, answer_id: str
   return res.json();
 }
 
-export async function post_finance_answer(session_id: string, answer: string) {
+export async function post_finance_answer(session_id: string, coin_name: string, answer: string) {
+  if (coin_name === "") {
+    return;
+  }
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.38.220:8000/api";
-  const url = `${baseUrl}/game/${session_id}/coin/BitCoin/finance_question/`;
+  const url = `${baseUrl}/game/${session_id}/coin/${coin_name}/finance_question/`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {

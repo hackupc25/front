@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Card } from "./card";
 import { fetch_coins_data, Coin } from "../../lib/game-service";
-import { SESSION_ID } from "../../lib/costants";
 
 const COLORS = ["#60a5fa", "#e63946", "#457b9d", "#f4a261", "#43aa8b", "#f3722c", "#b5179e", "#277da1"];
 
@@ -35,7 +34,7 @@ function filterHistoryByRange(history: { timestamp: string; value: number }[], r
   return history.filter(h => new Date(h.timestamp) >= from);
 }
 
-export function CryptoChart() {
+export function CryptoChart(props: {session_id: string}) {
   const [range, setRange] = useState("1M");
   const [coins, setCoins] = useState<Coin[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,11 +43,19 @@ export function CryptoChart() {
 
   useEffect(() => {
     setLoading(true);
-    fetch_coins_data(SESSION_ID).then((data) => {
-      setCoins(data.coins);
-      setLoading(false);
-    });
-  }, []);
+
+    const fetchData = () => {
+        console.log("fetching coins data");
+      fetch_coins_data(props.session_id).then((data) => {
+        setCoins(JSON.parse(JSON.stringify(data.coins)));
+        setLoading(false);
+      });
+    };
+
+    fetchData(); // Llamada inicial
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
+  }, [props.session_id]);
 
   useEffect(() => {
     if (!coins.length) return;

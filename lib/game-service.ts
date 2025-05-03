@@ -42,6 +42,15 @@ export type CoinSituation = {
 };
 
 export async function fetch_coin_situation(sessionId: string, coinName: string): Promise<CoinSituation> {
+  if (coinName === "") {
+    return {
+      id: 0,
+      coin_name: "",
+      situation: "",
+      category: "",
+      choices: [],
+    };
+  }
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.38.220:8000/api";
   const url = `${baseUrl}/game/${sessionId}/coin/${coinName}/situation`;
   const res = await fetch(url, {
@@ -83,4 +92,41 @@ export async function fetch_finance_question(sessionId: string, coinName: string
     question: data.question,
     options: [data.answers.A, data.answers.B, data.answers.C, data.answers.D],
   };
+}
+
+export async function create_game(players: { player_name: string; coin_name: string }[]) {
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.185.91:8000/api";
+  const url = `${baseUrl}/game`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ players }),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to create game: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export type UserInfo = {
+  name: string;
+  coin: string;
+  session_id: string;
+};
+
+export async function fetch_user_info(userName: string): Promise<UserInfo> {
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.185.91:8000/api";
+  const url = `${baseUrl}/user/${userName}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch user info: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
 } 
