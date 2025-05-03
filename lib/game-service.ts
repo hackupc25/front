@@ -12,7 +12,7 @@ export type GameSessionData = {
 };
 
 export async function fetch_coins_data(session: string): Promise<GameSessionData> {
-  const baseUrl = process.env.BACKEND_URL || "http://192.168.38.220:8000/api";
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.38.220:8000/api";
 
   const url = `${baseUrl}/game/${session}`;
   const res = await fetch(url, {
@@ -34,7 +34,7 @@ export type SituationChoice = {
 };
 
 export type CoinSituation = {
-  situation_id: number;
+  id: number;
   coin_name: string;
   situation: string;
   category: string;
@@ -67,7 +67,7 @@ export type FinanceQuestion = {
 };
 
 export async function fetch_finance_question(sessionId: string, coinName: string): Promise<FinanceQuestion> {
-  const baseUrl = process.env.BACKEND_URL || "http://192.168.38.220:8000/api";
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.38.220:8000/api";
   const url = `${baseUrl}/game/${sessionId}/coin/${coinName}/finance_question`;
   const res = await fetch(url, {
     method: 'GET',

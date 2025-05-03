@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import { Card } from "./card";
 import { fetch_coins_data, Coin } from "../../lib/game-service";
 import { SESSION_ID } from "../../lib/costants";
+
 const COLORS = ["#60a5fa", "#e63946", "#457b9d", "#f4a261", "#43aa8b", "#f3722c", "#b5179e", "#277da1"];
 
 const ranges = ["1D", "1S", "1M", "1A", "MAX"];
@@ -51,16 +52,13 @@ export function CryptoChart() {
 
   useEffect(() => {
     if (!coins.length) return;
-    // Para cada moneda, obtener su histórico filtrado y añadir el valor actual como último punto
+    // Para cada moneda, obtener su histórico filtrado
     const allDatesSet = new Set<string>();
     const coinHistories: Record<string, { timestamp: string; value: number }[]> = {};
     coins.forEach((coin) => {
-      const filtered = filterHistoryByRange(coin.value_history, range).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-      // Añadir el valor actual como último punto (con timestamp actual)
-      const nowIso = new Date().toISOString();
-      const fullHistory = [...filtered, { timestamp: nowIso, value: coin.current_value }];
-      coinHistories[coin.coin_name] = fullHistory;
-      fullHistory.forEach(h => allDatesSet.add(h.timestamp));
+      const filtered = filterHistoryByRange(coin.value_history, range).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      coinHistories[coin.coin_name] = filtered;
+      filtered.forEach(h => allDatesSet.add(h.timestamp));
     });
     // Fechas ordenadas
     const sortedDates = Array.from(allDatesSet).sort();
@@ -80,8 +78,8 @@ export function CryptoChart() {
     const newStats: Record<string, { value: number; change: number }> = {};
     coins.forEach((coin) => {
       const history = coinHistories[coin.coin_name];
-      const first = history.length ? history[0].value : coin.current_value;
-      const last = coin.current_value;
+      const first = history.length ? history[0].value : 0;
+      const last = history.length ? history[history.length - 1].value : 0;
       const change = first ? ((last - first) / first) * 100 : 0;
       newStats[coin.coin_name] = { value: last, change };
     });

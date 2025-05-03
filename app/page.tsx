@@ -31,7 +31,7 @@ export default function Home() {
         setModalQuestion({
           question: situation.situation,
           answers: situation.choices.map(c => c.text),
-          situationId: situation.situation_id,
+          situationId: situation.id,
           answerIds: situation.choices.map(c => c.id),
         });
       } catch (e) {
@@ -43,7 +43,6 @@ export default function Home() {
     } else {
       try {
         const finance = await fetch_finance_question(SESSION_ID, firstCoin);
-        console.log(finance);
         setModalQuestion({
           question: finance.question,
           answers: finance.options,

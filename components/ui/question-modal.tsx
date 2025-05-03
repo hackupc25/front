@@ -67,24 +67,34 @@ export function QuestionModal({
         ) : (
           <>
             <div className="flex flex-col gap-3 mb-6">
-              {!loading && answers && answers.map((ans, idx) => (
+              {!loading && answers && answers.length === 1 && answers[0] === "Cerrar" ? (
                 <button
-                  key={ans}
-                  className={`w-full py-3 rounded-lg border text-base font-medium transition
-                    ${selected === idx ? "bg-blue-700 text-blue-100 border-blue-700" : "bg-muted text-foreground border-border hover:bg-primary/10"}`}
-                  onClick={() => setSelected(idx)}
+                  className="w-full py-3 rounded-lg bg-blue-700 text-blue-100 font-semibold text-base transition"
+                  onClick={onClose}
                 >
-                  {ans}
+                  Cerrar
                 </button>
-              ))}
+              ) :
+                !loading && answers && answers.map((ans, idx) => (
+                  <button
+                    key={ans}
+                    className={`w-full py-3 rounded-lg border text-base font-medium transition
+                      ${selected === idx ? "bg-blue-700 text-blue-100 border-blue-700" : "bg-muted text-foreground border-border hover:bg-primary/10"}`}
+                    onClick={() => setSelected(idx)}
+                  >
+                    {ans}
+                  </button>
+                ))}
             </div>
-            <button
-              className="w-full py-3 rounded-lg bg-emerald-700 text-emerald-100 font-semibold text-base transition disabled:opacity-50"
-              disabled={selected === null || loading}
-              onClick={() => selected !== null && answers && onConfirm(answers[selected])}
-            >
-              Confirmar
-            </button>
+            {(!answers || answers.length !== 1 || answers[0] !== "Cerrar") && (
+              <button
+                className="w-full py-3 rounded-lg bg-emerald-700 text-emerald-100 font-semibold text-base transition disabled:opacity-50"
+                disabled={selected === null || loading}
+                onClick={() => selected !== null && answers && onConfirm(answers[selected])}
+              >
+                Confirmar
+              </button>
+            )}
           </>
         )}
       </div>

@@ -15,7 +15,7 @@ export async function post_situation_answer(situation_id: number, answer_id: str
 }
 
 export async function post_finance_answer(session_id: string, answer: string) {
-  const baseUrl = process.env.BACKEND_URL || "http://192.168.38.220:8000/api";
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.38.220:8000/api";
   const url = `${baseUrl}/game/${session_id}/coin/BitCoin/finance_question/`;
   const res = await fetch(url, {
     method: 'POST',
