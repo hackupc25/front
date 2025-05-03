@@ -47,7 +47,7 @@ export function QuestionModal({
           ×
         </button>
         <h2 className="text-xl font-bold mb-6 text-center">
-          {loading ? "Cargando..." : question}
+          {loading ? "Loading..." : question}
         </h2>
         {feedback ? (
           <div className="flex flex-col gap-4 items-center mb-4">

@@ -125,7 +125,20 @@ export function CryptoChart(props: {session_id: string}) {
           <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <XAxis dataKey="time" hide />
             <YAxis domain={["auto", "auto"]} hide />
-            <Tooltip formatter={(value: number, name: string) => [`${value?.toFixed(2) ?? "-"} €`, name]} />
+            
+            <Tooltip
+                content={({ label, payload }) => (
+                <div className="bg-background p-2 rounded shadow text-xs">
+                <div className="font-semibold mb-1">{label}</div>
+                {payload?.map((entry, idx) => (
+                    <div key={idx} className="flex justify-between gap-2">
+                    <span style={{ color: entry.color }}>{entry.name}</span>
+                    <span>{entry.value} €</span>
+                    </div>
+                ))}
+                </div>
+            )}
+            />            
             {coins.map((coin, idx) => (
               <Line
                 key={coin.coin_name}
@@ -135,7 +148,7 @@ export function CryptoChart(props: {session_id: string}) {
                 strokeWidth={2}
                 dot={false}
                 name={coin.coin_name}
-                isAnimationActive={false}
+                isAnimationActive={true}
               />
             ))}
           </LineChart>
