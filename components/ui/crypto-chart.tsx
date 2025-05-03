@@ -45,15 +45,14 @@ export function CryptoChart(props: {session_id: string}) {
     setLoading(true);
 
     const fetchData = () => {
-        console.log("fetching coins data");
       fetch_coins_data(props.session_id).then((data) => {
-        setCoins(JSON.parse(JSON.stringify(data.coins)));
+        setCoins(data.coins);
         setLoading(false);
       });
     };
 
     fetchData(); // Llamada inicial
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
   }, [props.session_id]);
 

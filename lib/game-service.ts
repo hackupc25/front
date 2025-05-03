@@ -112,7 +112,7 @@ export async function create_game(players: { player_name: string; coin_name: str
 
 export type UserInfo = {
   name: string;
-  coin: string;
+  coin_name: string;
   session_id: string;
 };
 

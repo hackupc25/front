@@ -23,10 +23,11 @@ export default function MainPage() {
   const handleJoin = async () => {
     try {
       const user = await fetch_user_info(joinName.trim());
+      console.log(user);
       setActiveUser({
         sessionId: user.session_id,
         userName: user.name,
-        coinName: user.coin,
+        coinName: user.coin_name,
       });
       router.push(`/game/${user.session_id}`);
     } catch (e) {
