@@ -18,6 +18,7 @@ export function QuestionModal({
   question,
   answers,
   loading = false,
+  feedback,
 }: {
   open: boolean;
   onClose: () => void;
@@ -25,6 +26,7 @@ export function QuestionModal({
   question?: string;
   answers?: string[];
   loading?: boolean;
+  feedback?: { correct: string; explanation: string } | null;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
 
@@ -40,32 +42,51 @@ export function QuestionModal({
         <button
           className="absolute top-4 right-4 text-2xl text-muted-foreground hover:text-foreground"
           onClick={onClose}
-          aria-label="Cerrar"
+          aria-label="Close"
         >
           ×
         </button>
         <h2 className="text-xl font-bold mb-6 text-center">
           {loading ? "Cargando..." : question}
         </h2>
-        <div className="flex flex-col gap-3 mb-6">
-          {!loading && answers && answers.map((ans, idx) => (
+        {feedback ? (
+          <div className="flex flex-col gap-4 items-center mb-4">
+            <div className="text-lg font-semibold text-green-400">
+              Correct answer: {feedback.correct}
+            </div>
+            <div className="text-base text-muted-foreground text-center">
+              {feedback.explanation}
+            </div>
             <button
-              key={ans}
-              className={`w-full py-3 rounded-lg border text-base font-medium transition
-                ${selected === idx ? "bg-blue-700 text-blue-100 border-blue-700" : "bg-muted text-foreground border-border hover:bg-primary/10"}`}
-              onClick={() => setSelected(idx)}
+              className="mt-4 px-6 py-2 rounded-lg bg-blue-700 text-blue-100 font-semibold text-base transition"
+              onClick={onClose}
             >
-              {ans}
+              Close
             </button>
-          ))}
-        </div>
-        <button
-          className="w-full py-3 rounded-lg bg-emerald-700 text-emerald-100 font-semibold text-base transition disabled:opacity-50"
-          disabled={selected === null || loading}
-          onClick={() => selected !== null && answers && onConfirm(answers[selected])}
-        >
-          Confirmar
-        </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-3 mb-6">
+              {!loading && answers && answers.map((ans, idx) => (
+                <button
+                  key={ans}
+                  className={`w-full py-3 rounded-lg border text-base font-medium transition
+                    ${selected === idx ? "bg-blue-700 text-blue-100 border-blue-700" : "bg-muted text-foreground border-border hover:bg-primary/10"}`}
+                  onClick={() => setSelected(idx)}
+                >
+                  {ans}
+                </button>
+              ))}
+            </div>
+            <button
+              className="w-full py-3 rounded-lg bg-emerald-700 text-emerald-100 font-semibold text-base transition disabled:opacity-50"
+              disabled={selected === null || loading}
+              onClick={() => selected !== null && answers && onConfirm(answers[selected])}
+            >
+              Confirmar
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

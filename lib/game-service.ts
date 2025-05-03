@@ -12,7 +12,7 @@ export type GameSessionData = {
 };
 
 export async function fetch_coins_data(session: string): Promise<GameSessionData> {
-  const baseUrl = process.env.BACKEND_URL || "http://192.168.185.91:8000/api";
+  const baseUrl = process.env.BACKEND_URL || "http://192.168.38.220:8000/api";
 
   const url = `${baseUrl}/game/${session}`;
   const res = await fetch(url, {
@@ -56,14 +56,19 @@ export async function fetch_coin_situation(sessionId: string, coinName: string):
   return res.json();
 }
 
+export type FinanceQuestionApi = {
+  question: string;
+  answers: Record<"A"|"B"|"C"|"D", string>;
+};
+
 export type FinanceQuestion = {
   question: string;
   options: string[];
 };
 
-export async function fetch_finance_question(sessionId: string): Promise<FinanceQuestion> {
-  const baseUrl = process.env.BACKEND_URL || "http://192.168.185.91:8000/api";
-  const url = `${baseUrl}/game/${sessionId}/finance_question`;
+export async function fetch_finance_question(sessionId: string, coinName: string): Promise<FinanceQuestion> {
+  const baseUrl = process.env.BACKEND_URL || "http://192.168.38.220:8000/api";
+  const url = `${baseUrl}/game/${sessionId}/coin/${coinName}/finance_question`;
   const res = await fetch(url, {
     method: 'GET',
     headers: {
@@ -73,5 +78,9 @@ export async function fetch_finance_question(sessionId: string): Promise<Finance
   if (!res.ok) {
     throw new Error(`Failed to fetch finance question: ${res.status} ${res.statusText}`);
   }
-  return res.json();
+  const data: FinanceQuestionApi = await res.json();
+  return {
+    question: data.question,
+    options: [data.answers.A, data.answers.B, data.answers.C, data.answers.D],
+  };
 } 

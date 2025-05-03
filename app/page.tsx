@@ -17,6 +17,7 @@ export default function Home() {
     answerIds?: string[];
   } | null>(null);
   const [loadingModal, setLoadingModal] = useState(false);
+  const [modalFeedback, setModalFeedback] = useState<null | { correct: string; explanation: string }> (null);
 
   // Simula obtener la primera moneda (en real, deberías obtenerla del backend o del estado global)
   const firstCoin = "BitCoin";
@@ -41,7 +42,8 @@ export default function Home() {
       }
     } else {
       try {
-        const finance = await fetch_finance_question(SESSION_ID);
+        const finance = await fetch_finance_question(SESSION_ID, firstCoin);
+        console.log(finance);
         setModalQuestion({
           question: finance.question,
           answers: finance.options,
@@ -59,6 +61,7 @@ export default function Home() {
   const handleClose = () => {
     setModalOpen(null);
     setModalQuestion(null);
+    setModalFeedback(null);
   };
 
   const handleConfirm = async (answer: string) => {
@@ -70,18 +73,24 @@ export default function Home() {
       } catch (e) {
         // Podrías manejar el error aquí si lo deseas
       }
-    }
-    if (modalOpen === "learning" && modalQuestion?.answers) {
+      setModalOpen(null);
+      setModalQuestion(null);
+    } else if (modalOpen === "learning" && modalQuestion?.answers) {
       const idx = modalQuestion.answers.findIndex(a => a === answer);
-      const answerLetter = ["a", "b", "c", "d"][idx];
+      const answerLetter = ["A", "B", "C", "D"][idx];
       try {
-        await post_finance_answer(SESSION_ID, answerLetter);
+        const res = await post_finance_answer(SESSION_ID, answerLetter);
+        setModalFeedback({
+          correct: res.correct_answer,
+          explanation: res.explanation,
+        });
       } catch (e) {
-        // Podrías manejar el error aquí si lo deseas
+        setModalFeedback({
+          correct: "",
+          explanation: "No se pudo obtener la explicación.",
+        });
       }
     }
-    setModalOpen(null);
-    setModalQuestion(null);
   };
 
   return (
@@ -109,6 +118,7 @@ export default function Home() {
         question={modalQuestion?.question}
         answers={modalQuestion?.answers}
         loading={loadingModal}
+        feedback={modalFeedback}
       />
     </main>
   );
