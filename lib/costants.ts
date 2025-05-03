@@ -1,0 +1,3 @@
+const SESSION_ID = "4534c8cd-5235-41fd-8785-2013754b4a15";
+
+export { SESSION_ID };
