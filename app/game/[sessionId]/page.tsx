@@ -1,7 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CryptoChart } from "../../../components/ui/crypto-chart";
-import { PortfolioSummary } from "../../../components/ui/portfolio-summary";
 import { QuestionModal } from "../../../components/ui/question-modal";
 import { fetch_coin_situation, CoinSituation, fetch_finance_question, fetch_coins_data } from "../../../lib/game-service";
 import { post_situation_answer, post_finance_answer } from "../../../lib/situation-service";
