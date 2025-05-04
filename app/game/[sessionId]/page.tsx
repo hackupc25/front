@@ -70,12 +70,14 @@ export default function Home() {
       const idx = modalQuestion.answers.findIndex(a => a === answer);
       const answerId = modalQuestion.answerIds[idx];
       try {
-        await post_situation_answer(modalQuestion.situationId, answerId);
+        const res = await post_situation_answer(modalQuestion.situationId, answerId);
+        console.log("Res", res);
+        setModalFeedback({
+          explanation: res.consequence,
+        });
       } catch (e) {
         // Podrías manejar el error aquí si lo deseas
       }
-      setModalOpen(null);
-      setModalQuestion(null);
     } else if (modalOpen === "learning" && modalQuestion?.answers) {
       const idx = modalQuestion.answers.findIndex(a => a === answer);
       const answerLetter = ["A", "B", "C", "D"][idx];
@@ -97,18 +99,15 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-start bg-background dark:bg-[#101014] pb-12">
       <div className="w-full flex flex-col items-center">
-        <div className="w-full max-w-6xl flex flex-col md:flex-row gap-2 mt-12 items-center md:items-start justify-center">
-          {/* Columna izquierda: Summary */}
-          <div className="flex-1 flex flex-col min-h-[500px] min-w-[280px] max-w-sm justify-between h-full">
-            <PortfolioSummary />
-            <div className="flex flex-row gap-3 mt-2 w-full">
-              <button className="flex-1 py-3 rounded-lg bg-blue-500 hover:bg-blue-400 text-white font-semibold text-base transition" onClick={() => handleOpen("decision")}>Daily Decision</button>
-              <button className="flex-1 py-3 rounded-lg bg-orange-500 hover:bg-orange-400 text-white font-semibold text-base transition" onClick={() => handleOpen("learning")}>Daily Learning</button>
-            </div>
-          </div>
-          {/* Columna derecha: Gráfica */}
-          <div className="flex-[2] min-w-0">
+        <div className="w-full max-w-6xl flex flex-col gap-2 mt-12 items-center justify-center">
+          {/* Gráfica */}
+          <div className="w-full">
             <CryptoChart session_id={sessionId}/>
+          </div>
+          {/* Botones debajo de la gráfica */}
+          <div className="w-full max-w-md flex flex-row gap-3 mt-4">
+            <button className="flex-1 py-3 rounded-lg bg-blue-500 hover:bg-blue-400 text-white font-semibold text-base transition" onClick={() => handleOpen("decision")}>Daily Decision</button>
+            <button className="flex-1 py-3 rounded-lg bg-orange-500 hover:bg-orange-400 text-white font-semibold text-base transition" onClick={() => handleOpen("learning")}>Daily Learning</button>
           </div>
         </div>
       </div>

@@ -51,9 +51,11 @@ export function QuestionModal({
         </h2>
         {feedback ? (
           <div className="flex flex-col gap-4 items-center mb-4">
-            <div className="text-lg font-semibold text-green-400">
-              Correct answer: {feedback.correct}
-            </div>
+            {feedback.correct && (
+              <div className="text-lg font-semibold text-green-400">
+                Correct answer: {feedback.correct}
+              </div>
+            )}
             <div className="text-base text-muted-foreground text-center">
               {feedback.explanation}
             </div>

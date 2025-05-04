@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Card } from "./card";
+import { Card, CardContent } from "./card";
 import { fetch_coins_data, Coin } from "../../lib/game-service";
 
 const COLORS = ["#60a5fa", "#e63946", "#457b9d", "#f4a261", "#43aa8b", "#f3722c", "#b5179e", "#277da1"];
@@ -92,68 +92,100 @@ export function CryptoChart(props: {session_id: string}) {
     setStats(newStats);
   }, [coins, range]);
 
+  // Sort coins by value for leaderboard
+  const sortedCoins = [...coins].sort((a, b) => {
+    const valueA = stats[a.coin_name]?.value || 0;
+    const valueB = stats[b.coin_name]?.value || 0;
+    return valueB - valueA; // Sort in descending order
+  });
+
   return (
-    <Card className="w-full max-w-xl mx-auto p-6">
-      <div className="flex flex-col gap-2 mb-2">
-        {coins.map((coin, idx) => (
-          <div key={coin.coin_name} className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }} />
-            <span className="font-medium">{coin.coin_name}</span>
-            <span className="ml-auto text-2xl font-bold">
-              {stats[coin.coin_name]?.value?.toFixed(2) ?? "-"} €
-            </span>
-            <span className={`text-xs ml-2 ${stats[coin.coin_name]?.change >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {stats[coin.coin_name]?.change >= 0 ? "▲" : "▼"} {Math.abs(stats[coin.coin_name]?.change ?? 0).toFixed(2)} %
-            </span>
-          </div>
-        ))}
+    <div className="w-full flex flex-col items-center">
+      <div className="w-full flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-extrabold text-primary drop-shadow-md">
+          Coinpetition
+        </h1>
       </div>
-      <div className="flex gap-2 mb-4 justify-end">
-        {ranges.map(r => (
-          <button
-            key={r}
-            className={`px-2 py-1 rounded text-xs font-medium ${r === range ? "bg-black text-white" : "bg-muted text-muted-foreground"}`}
-            onClick={() => setRange(r)}
-            disabled={loading}
-          >
-            {r}
-          </button>
-        ))}
-      </div>
-      <div className="h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-            <XAxis dataKey="time" hide />
-            <YAxis domain={["auto", "auto"]} hide />
-            
-            <Tooltip
-                content={({ label, payload }) => (
-                <div className="bg-background p-2 rounded shadow text-xs">
-                <div className="font-semibold mb-1">{label}</div>
-                {payload?.map((entry, idx) => (
-                    <div key={idx} className="flex justify-between gap-2">
-                    <span style={{ color: entry.color }}>{entry.name}</span>
-                    <span>{entry.value} €</span>
-                    </div>
-                ))}
+      
+      <div className="flex flex-col md:flex-row gap-4 w-full max-w-5xl mx-auto">
+        {/* Leaderboard Section */}
+        <Card className="w-full md:w-1/3 bg-slate-900 text-white">
+          <CardContent className="p-4">
+            <h3 className="text-xl font-bold mb-4">Crypto Leaderboard</h3>
+            <div className="flex flex-col gap-2">
+              {sortedCoins.map((coin, idx) => (
+                <div 
+                  key={coin.coin_name} 
+                  className="flex items-center p-3 rounded-lg border border-slate-700"
+                >
+                  <span className="font-bold text-sm w-6 h-6 flex items-center justify-center rounded-full bg-white text-slate-900">
+                    {idx + 1}
+                  </span>
+                  <span className="inline-block w-3 h-3 rounded-full ml-2" style={{ background: COLORS[idx % COLORS.length] }} />
+                  <span className="font-medium ml-2">{coin.coin_name}</span>
+                  <div className="ml-auto flex flex-col items-end">
+                    <span className="font-bold text-lg">
+                      {stats[coin.coin_name]?.value?.toFixed(2) ?? "-"} €
+                    </span>
+                    <span className={`text-xs ${stats[coin.coin_name]?.change >= 0 ? "text-green-400" : "text-red-400"}`}>
+                      {stats[coin.coin_name]?.change >= 0 ? "▲" : "▼"} {Math.abs(stats[coin.coin_name]?.change ?? 0).toFixed(2)}%
+                    </span>
+                  </div>
                 </div>
-            )}
-            />            
-            {coins.map((coin, idx) => (
-              <Line
-                key={coin.coin_name}
-                type="monotone"
-                dataKey={coin.coin_name}
-                stroke={COLORS[idx % COLORS.length]}
-                strokeWidth={2}
-                dot={false}
-                name={coin.coin_name}
-                isAnimationActive={true}
-              />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Chart Section */}
+        <Card className="w-full md:w-2/3 p-6">
+          <div className="flex gap-2 mb-4 justify-end">
+            {ranges.map(r => (
+              <button
+                key={r}
+                className={`px-2 py-1 rounded text-xs font-medium ${r === range ? "bg-black text-white" : "bg-muted text-muted-foreground"}`}
+                onClick={() => setRange(r)}
+                disabled={loading}
+              >
+                {r}
+              </button>
             ))}
-          </LineChart>
-        </ResponsiveContainer>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <XAxis dataKey="time" hide />
+                <YAxis domain={["auto", "auto"]} hide />
+                <Tooltip
+                  content={({ label, payload }) => (
+                    <div className="bg-background p-2 rounded shadow text-xs">
+                      <div className="font-semibold mb-1">{label}</div>
+                      {payload?.map((entry, idx) => (
+                        <div key={idx} className="flex justify-between gap-2">
+                          <span style={{ color: entry.color }}>{entry.name}</span>
+                          <span>{entry.value} €</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                />
+                {coins.map((coin, idx) => (
+                  <Line
+                    key={coin.coin_name}
+                    type="monotone"
+                    dataKey={coin.coin_name}
+                    stroke={COLORS[idx % COLORS.length]}
+                    strokeWidth={2}
+                    dot={false}
+                    name={coin.coin_name}
+                    isAnimationActive={true}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
       </div>
-    </Card>
+    </div>
   );
 } 
