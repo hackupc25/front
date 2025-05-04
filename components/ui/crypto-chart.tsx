@@ -8,7 +8,7 @@ import Image from "next/image";
 
 const COLORS = ["#60a5fa", "#e63946", "#457b9d", "#f4a261", "#43aa8b", "#f3722c", "#b5179e", "#277da1"];
 
-const ranges = ["1D", "1S", "1M"];
+const ranges = ["1D", "1W", "1M"];
 
 function filterHistoryByRange(history: { timestamp: string; value: number }[], range: string) {
   if (!history.length) return [];
@@ -18,7 +18,7 @@ function filterHistoryByRange(history: { timestamp: string; value: number }[], r
     case "1D":
       from = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
       break;
-    case "1S":
+    case "1W":
       from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       break;
     case "1M":
