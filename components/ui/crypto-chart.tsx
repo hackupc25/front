@@ -276,10 +276,9 @@ export function CryptoChart(props: {session_id: string}) {
                   ))}
                 </div>
                 
-                {/* Description - Placeholder as it doesn't exist in the current data model */}
+                {/* Description - Use fetched description if available */}
                 <p className="text-gray-600 dark:text-gray-300">
-                  {selectedCoin.coin_name} is a cryptocurrency with {selectedCoin.value_history.length} historical data points.
-                  Click on the time range buttons above to see different historical views.
+                    {selectedCoin.description}
                 </p>
               </div>
             </div>

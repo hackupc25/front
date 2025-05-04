@@ -2,6 +2,7 @@ export type Coin = {
   coin_name: string;
   current_value: number;
   value_history: { timestamp: string; value: number }[];
+  description: string;
   image?: string;
 };
 
@@ -95,7 +96,7 @@ export async function fetch_finance_question(sessionId: string, coinName: string
   };
 }
 
-export async function create_game(players: { player_name: string; coin_name: string }[]) {
+export async function create_game(players: { player_name: string; coin_name: string; coin_description: string }[]) {
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.185.91:8000/api";
   const url = `${baseUrl}/game`;
   const res = await fetch(url, {
