@@ -7,16 +7,18 @@ import { useActiveUser } from "../lib/active-user-context";
 export default function MainPage() {
   const [playerName, setPlayerName] = useState("");
   const [coinName, setCoinName] = useState("");
-  const [players, setPlayers] = useState<{ name: string; coin: string }[]>([]);
+  const [coinVision, setCoinVision] = useState("");
+  const [players, setPlayers] = useState<{ name: string; coin: string; vision: string }[]>([]);
   const [joinName, setJoinName] = useState("");
   const router = useRouter();
   const { activeUser, setActiveUser } = useActiveUser();
 
   const handleAdd = () => {
-    if (playerName.trim() && coinName.trim()) {
-      setPlayers([...players, { name: playerName.trim(), coin: coinName.trim() }]);
+    if (playerName.trim() && coinName.trim() && coinVision.trim()) {
+      setPlayers([...players, { name: playerName.trim(), coin: coinName.trim(), vision: coinVision.trim() }]);
       setPlayerName("");
       setCoinName("");
+      setCoinVision("");
     }
   };
 
@@ -38,7 +40,11 @@ export default function MainPage() {
 
   const handleStartGame = async () => {
     try {
-      const response = await create_game(players.map(p => ({ player_name: p.name, coin_name: p.coin })));
+      const response = await create_game(players.map(p => ({ 
+        player_name: p.name, 
+        coin_name: p.coin,
+        coin_description: p.vision
+      })));
       const sessionId = response.session_id;
       if (players.length > 0) {
         setActiveUser({
@@ -77,10 +83,17 @@ export default function MainPage() {
                 onChange={e => setCoinName(e.target.value)}
               />
             </div>
+            <input
+              type="text"
+              placeholder="Coin vision"
+              className="w-full px-4 py-2 rounded-lg border border-border bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              value={coinVision}
+              onChange={e => setCoinVision(e.target.value)}
+            />
             <button
-              className={`w-full px-6 py-2 rounded-lg font-semibold text-base transition disabled:opacity-50 ${playerName.trim() && coinName.trim() ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
+              className={`w-full px-6 py-2 rounded-lg font-semibold text-base transition disabled:opacity-50 ${playerName.trim() && coinName.trim() && coinVision.trim() ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
               onClick={handleAdd}
-              disabled={!playerName.trim() || !coinName.trim()}
+              disabled={!playerName.trim() || !coinName.trim() || !coinVision.trim()}
             >
               Add
             </button>

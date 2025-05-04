@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Card } from "./card";
+import { Card, CardContent } from "./card";
 import { fetch_coins_data, Coin } from "../../lib/game-service";
+import Image from "next/image";
 
 const COLORS = ["#60a5fa", "#e63946", "#457b9d", "#f4a261", "#43aa8b", "#f3722c", "#b5179e", "#277da1"];
 
@@ -40,6 +41,7 @@ export function CryptoChart(props: {session_id: string}) {
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
   const [stats, setStats] = useState<Record<string, { value: number; change: number }>>({});
+  const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -90,70 +92,199 @@ export function CryptoChart(props: {session_id: string}) {
       newStats[coin.coin_name] = { value: last, change };
     });
     setStats(newStats);
-  }, [coins, range]);
+    
+    // Update selected coin if it exists
+    if (selectedCoin) {
+      const updatedCoin = coins.find(c => c.coin_name === selectedCoin.coin_name);
+      if (updatedCoin) {
+        setSelectedCoin(updatedCoin);
+      }
+    }
+  }, [coins, range, selectedCoin]);
+
+  // Sort coins by value for leaderboard
+  const sortedCoins = [...coins].sort((a, b) => {
+    const valueA = stats[a.coin_name]?.value || 0;
+    const valueB = stats[b.coin_name]?.value || 0;
+    return valueB - valueA; // Sort in descending order
+  });
+  
+  const handleCoinClick = (coin: Coin) => {
+    if (selectedCoin && selectedCoin.coin_name === coin.coin_name) {
+      setSelectedCoin(null); // Deselect if already selected
+    } else {
+      setSelectedCoin(coin); // Select the coin
+    }
+  };
 
   return (
-    <Card className="w-full max-w-xl mx-auto p-6">
-      <div className="flex flex-col gap-2 mb-2">
-        {coins.map((coin, idx) => (
-          <div key={coin.coin_name} className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }} />
-            <span className="font-medium">{coin.coin_name}</span>
-            <span className="ml-auto text-2xl font-bold">
-              {stats[coin.coin_name]?.value?.toFixed(2) ?? "-"} €
-            </span>
-            <span className={`text-xs ml-2 ${stats[coin.coin_name]?.change >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {stats[coin.coin_name]?.change >= 0 ? "▲" : "▼"} {Math.abs(stats[coin.coin_name]?.change ?? 0).toFixed(2)} %
-            </span>
-          </div>
-        ))}
+    <div className="w-full flex flex-col items-center">
+      <div className="w-full flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-extrabold text-primary drop-shadow-md">
+          Coinpetition
+        </h1>
       </div>
-      <div className="flex gap-2 mb-4 justify-end">
-        {ranges.map(r => (
-          <button
-            key={r}
-            className={`px-2 py-1 rounded text-xs font-medium ${r === range ? "bg-black text-white" : "bg-muted text-muted-foreground"}`}
-            onClick={() => setRange(r)}
-            disabled={loading}
-          >
-            {r}
-          </button>
-        ))}
-      </div>
-      <div className="h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-            <XAxis dataKey="time" hide />
-            <YAxis domain={["auto", "auto"]} hide />
-            
-            <Tooltip
-                content={({ label, payload }) => (
-                <div className="bg-background p-2 rounded shadow text-xs">
-                <div className="font-semibold mb-1">{label}</div>
-                {payload?.map((entry, idx) => (
-                    <div key={idx} className="flex justify-between gap-2">
-                    <span style={{ color: entry.color }}>{entry.name}</span>
-                    <span>{entry.value} €</span>
-                    </div>
-                ))}
+      
+      <div className="flex flex-col md:flex-row gap-4 w-full max-w-5xl mx-auto">
+        {/* Leaderboard Section */}
+        <Card className="w-full md:w-1/3 bg-slate-900 text-white">
+          <CardContent className="p-4">
+            <h3 className="text-xl font-bold mb-4">Crypto Leaderboard</h3>
+            <div className="flex flex-col gap-2">
+              {sortedCoins.map((coin, idx) => (
+                <div 
+                  key={coin.coin_name} 
+                  className={`flex items-center p-3 rounded-lg border transition-colors cursor-pointer ${
+                    selectedCoin?.coin_name === coin.coin_name 
+                      ? "border-blue-500 bg-slate-800" 
+                      : "border-slate-700 hover:bg-slate-800"
+                  }`}
+                  onClick={() => handleCoinClick(coin)}
+                >
+                  <span 
+                    className={`font-bold text-lg min-w-8 text-center ${
+                      idx === 0 ? "text-yellow-400" : 
+                      idx === 1 ? "text-gray-300" : 
+                      idx === 2 ? "text-amber-600" : 
+                      "text-slate-400"
+                    }`}
+                  >
+                    #{idx + 1}
+                  </span>
+                  <div className="h-8 w-8 relative mx-2">
+                    <Image 
+                      src={coin.image || "/coins/default.png"}
+                      alt={coin.coin_name}
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                    />
+                  </div>
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }} />
+                  <span className="font-medium ml-2">{coin.coin_name}</span>
+                  <div className="ml-auto flex flex-col items-end">
+                    <span className="font-bold text-lg">
+                      {stats[coin.coin_name]?.value?.toFixed(2) ?? "-"} €
+                    </span>
+                  </div>
                 </div>
-            )}
-            />            
-            {coins.map((coin, idx) => (
-              <Line
-                key={coin.coin_name}
-                type="monotone"
-                dataKey={coin.coin_name}
-                stroke={COLORS[idx % COLORS.length]}
-                strokeWidth={2}
-                dot={false}
-                name={coin.coin_name}
-                isAnimationActive={true}
-              />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Chart Section */}
+        <Card className="w-full md:w-2/3 p-6">
+          <div className="flex gap-2 mb-4 justify-end">
+            {ranges.map(r => (
+              <button
+                key={r}
+                className={`px-2 py-1 rounded text-xs font-medium ${r === range ? "bg-black text-white" : "bg-muted text-muted-foreground"}`}
+                onClick={() => setRange(r)}
+                disabled={loading}
+              >
+                {r}
+              </button>
             ))}
-          </LineChart>
-        </ResponsiveContainer>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <XAxis dataKey="time" hide />
+                <YAxis domain={["auto", "auto"]} hide />
+                <Tooltip
+                  content={({ label, payload }) => (
+                    <div className="bg-background p-2 rounded shadow text-xs">
+                      <div className="font-semibold mb-1">{label}</div>
+                      {payload?.map((entry, idx) => (
+                        <div key={idx} className="flex justify-between gap-2">
+                          <span style={{ color: entry.color }}>{entry.name}</span>
+                          <span>{entry.value} €</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                />
+                {coins.map((coin, idx) => (
+                  <Line
+                    key={coin.coin_name}
+                    type="monotone"
+                    dataKey={coin.coin_name}
+                    stroke={COLORS[idx % COLORS.length]}
+                    strokeWidth={2}
+                    dot={false}
+                    name={coin.coin_name}
+                    isAnimationActive={true}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
       </div>
-    </Card>
+      
+      {/* Coin Detail Section */}
+      {selectedCoin && (
+        <Card className="w-full max-w-5xl mt-6 overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              {/* Coin Image */}
+              <div className="relative w-40 h-40 flex-shrink-0">
+                <Image
+                  src={selectedCoin.image || "/coins/default.png"}
+                  alt={selectedCoin.coin_name}
+                  fill
+                  className="rounded-xl object-cover"
+                />
+              </div>
+              
+              {/* Coin Details */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-2xl font-bold">{selectedCoin.coin_name}</h2>
+                  <span
+                    className="w-4 h-4 rounded-full"
+                    style={{
+                      background: COLORS[coins.findIndex(c => c.coin_name === selectedCoin.coin_name) % COLORS.length]
+                    }}
+                  />
+                </div>
+                
+                <div className="flex items-baseline gap-3 mb-4">
+                  <span className="text-3xl font-bold">
+                    {stats[selectedCoin.coin_name]?.value?.toFixed(2) ?? "-"} €
+                  </span>
+                  
+                </div>
+                
+                {/* Historical performance summary */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  {ranges.map(r => (
+                    <div key={r} className="bg-gray-100 dark:bg-slate-800 p-3 rounded-lg">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{r} Change</div>
+                      <div
+                        className={`text-lg font-semibold ${
+                          stats[selectedCoin.coin_name]?.change >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {stats[selectedCoin.coin_name]?.change >= 0 ? "+" : ""}
+                        {stats[selectedCoin.coin_name]?.change?.toFixed(2)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Description - Use fetched description if available */}
+                <p className="text-gray-600 dark:text-gray-300">
+                    {selectedCoin.description}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 } 
