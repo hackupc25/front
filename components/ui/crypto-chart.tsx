@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent } from "./card";
 import { fetch_coins_data, Coin } from "../../lib/game-service";
+import Image from "next/image";
 
 const COLORS = ["#60a5fa", "#e63946", "#457b9d", "#f4a261", "#43aa8b", "#f3722c", "#b5179e", "#277da1"];
 
@@ -40,6 +41,7 @@ export function CryptoChart(props: {session_id: string}) {
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
   const [stats, setStats] = useState<Record<string, { value: number; change: number }>>({});
+  const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -90,7 +92,15 @@ export function CryptoChart(props: {session_id: string}) {
       newStats[coin.coin_name] = { value: last, change };
     });
     setStats(newStats);
-  }, [coins, range]);
+    
+    // Update selected coin if it exists
+    if (selectedCoin) {
+      const updatedCoin = coins.find(c => c.coin_name === selectedCoin.coin_name);
+      if (updatedCoin) {
+        setSelectedCoin(updatedCoin);
+      }
+    }
+  }, [coins, range, selectedCoin]);
 
   // Sort coins by value for leaderboard
   const sortedCoins = [...coins].sort((a, b) => {
@@ -98,6 +108,14 @@ export function CryptoChart(props: {session_id: string}) {
     const valueB = stats[b.coin_name]?.value || 0;
     return valueB - valueA; // Sort in descending order
   });
+  
+  const handleCoinClick = (coin: Coin) => {
+    if (selectedCoin && selectedCoin.coin_name === coin.coin_name) {
+      setSelectedCoin(null); // Deselect if already selected
+    } else {
+      setSelectedCoin(coin); // Select the coin
+    }
+  };
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -116,19 +134,37 @@ export function CryptoChart(props: {session_id: string}) {
               {sortedCoins.map((coin, idx) => (
                 <div 
                   key={coin.coin_name} 
-                  className="flex items-center p-3 rounded-lg border border-slate-700"
+                  className={`flex items-center p-3 rounded-lg border transition-colors cursor-pointer ${
+                    selectedCoin?.coin_name === coin.coin_name 
+                      ? "border-blue-500 bg-slate-800" 
+                      : "border-slate-700 hover:bg-slate-800"
+                  }`}
+                  onClick={() => handleCoinClick(coin)}
                 >
-                  <span className="font-bold text-sm w-6 h-6 flex items-center justify-center rounded-full bg-white text-slate-900">
-                    {idx + 1}
+                  <span 
+                    className={`font-bold text-lg min-w-8 text-center ${
+                      idx === 0 ? "text-yellow-400" : 
+                      idx === 1 ? "text-gray-300" : 
+                      idx === 2 ? "text-amber-600" : 
+                      "text-slate-400"
+                    }`}
+                  >
+                    #{idx + 1}
                   </span>
-                  <span className="inline-block w-3 h-3 rounded-full ml-2" style={{ background: COLORS[idx % COLORS.length] }} />
+                  <div className="h-8 w-8 relative mx-2">
+                    <Image 
+                      src={coin.image || "/coins/default.png"}
+                      alt={coin.coin_name}
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                    />
+                  </div>
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }} />
                   <span className="font-medium ml-2">{coin.coin_name}</span>
                   <div className="ml-auto flex flex-col items-end">
                     <span className="font-bold text-lg">
                       {stats[coin.coin_name]?.value?.toFixed(2) ?? "-"} €
-                    </span>
-                    <span className={`text-xs ${stats[coin.coin_name]?.change >= 0 ? "text-green-400" : "text-red-400"}`}>
-                      {stats[coin.coin_name]?.change >= 0 ? "▲" : "▼"} {Math.abs(stats[coin.coin_name]?.change ?? 0).toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -186,6 +222,70 @@ export function CryptoChart(props: {session_id: string}) {
           </div>
         </Card>
       </div>
+      
+      {/* Coin Detail Section */}
+      {selectedCoin && (
+        <Card className="w-full max-w-5xl mt-6 overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              {/* Coin Image */}
+              <div className="relative w-40 h-40 flex-shrink-0">
+                <Image
+                  src={selectedCoin.image || "/coins/default.png"}
+                  alt={selectedCoin.coin_name}
+                  fill
+                  className="rounded-xl object-cover"
+                />
+              </div>
+              
+              {/* Coin Details */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-2xl font-bold">{selectedCoin.coin_name}</h2>
+                  <span
+                    className="w-4 h-4 rounded-full"
+                    style={{
+                      background: COLORS[coins.findIndex(c => c.coin_name === selectedCoin.coin_name) % COLORS.length]
+                    }}
+                  />
+                </div>
+                
+                <div className="flex items-baseline gap-3 mb-4">
+                  <span className="text-3xl font-bold">
+                    {stats[selectedCoin.coin_name]?.value?.toFixed(2) ?? "-"} €
+                  </span>
+                  
+                </div>
+                
+                {/* Historical performance summary */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  {ranges.map(r => (
+                    <div key={r} className="bg-gray-100 dark:bg-slate-800 p-3 rounded-lg">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{r} Change</div>
+                      <div
+                        className={`text-lg font-semibold ${
+                          stats[selectedCoin.coin_name]?.change >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {stats[selectedCoin.coin_name]?.change >= 0 ? "+" : ""}
+                        {stats[selectedCoin.coin_name]?.change?.toFixed(2)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Description - Placeholder as it doesn't exist in the current data model */}
+                <p className="text-gray-600 dark:text-gray-300">
+                  {selectedCoin.coin_name} is a cryptocurrency with {selectedCoin.value_history.length} historical data points.
+                  Click on the time range buttons above to see different historical views.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 } 

@@ -2,6 +2,7 @@ export type Coin = {
   coin_name: string;
   current_value: number;
   value_history: { timestamp: string; value: number }[];
+  image?: string;
 };
 
 export type GameSessionData = {
