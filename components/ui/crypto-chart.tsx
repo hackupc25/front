@@ -3,12 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent } from "./card";
-import { fetch_coins_data, Coin } from "../../lib/game-service";
+import { fetch_coins_data, Coin, fetch_coin_situation_resume, SituationResume } from "../../lib/game-service";
 import Image from "next/image";
 
 const COLORS = ["#60a5fa", "#e63946", "#457b9d", "#f4a261", "#43aa8b", "#f3722c", "#b5179e", "#277da1"];
 
-const ranges = ["1D", "1S", "1M", "1A", "MAX"];
+const ranges = ["1D", "1S", "1M"];
 
 function filterHistoryByRange(history: { timestamp: string; value: number }[], range: string) {
   if (!history.length) return [];
@@ -25,10 +25,6 @@ function filterHistoryByRange(history: { timestamp: string; value: number }[], r
       from = new Date(now);
       from.setMonth(now.getMonth() - 1);
       break;
-    case "1A":
-      from = new Date(now);
-      from.setFullYear(now.getFullYear() - 1);
-      break;
     default:
       from = new Date(0);
   }
@@ -40,8 +36,11 @@ export function CryptoChart(props: {session_id: string}) {
   const [coins, setCoins] = useState<Coin[]>([]);
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [stats, setStats] = useState<Record<string, { value: number; change: number }>>({});
+  const [stats, setStats] = useState<Record<string, Record<string, { value: number; change: number }>>>({});
   const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
+  const [situationSummary, setSituationSummary] = useState<string>("");
+  const [loadingSituations, setLoadingSituations] = useState(false);
+  const [situationsCache, setSituationsCache] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setLoading(true);
@@ -82,15 +81,26 @@ export function CryptoChart(props: {session_id: string}) {
       return entry;
     });
     setChartData(data);
-    // Calcular stats
-    const newStats: Record<string, { value: number; change: number }> = {};
+    
+    // Calculate stats for all time ranges
+    const newStats: Record<string, Record<string, { value: number; change: number }>> = {};
+    
     coins.forEach((coin) => {
-      const history = coinHistories[coin.coin_name];
-      const first = history.length ? history[0].value : 0;
-      const last = history.length ? history[history.length - 1].value : 0;
-      const change = first ? ((last - first) / first) * 100 : 0;
-      newStats[coin.coin_name] = { value: last, change };
+      newStats[coin.coin_name] = {};
+      
+      // Calculate stats for each time range
+      ranges.forEach(r => {
+        const filteredHistory = filterHistoryByRange(coin.value_history, r)
+          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        
+        const first = filteredHistory.length ? filteredHistory[0].value : 0;
+        const last = filteredHistory.length ? filteredHistory[filteredHistory.length - 1].value : 0;
+        const change = first ? ((last - first) / first) * 100 : 0;
+        
+        newStats[coin.coin_name][r] = { value: last, change };
+      });
     });
+    
     setStats(newStats);
     
     // Update selected coin if it exists
@@ -104,16 +114,43 @@ export function CryptoChart(props: {session_id: string}) {
 
   // Sort coins by value for leaderboard
   const sortedCoins = [...coins].sort((a, b) => {
-    const valueA = stats[a.coin_name]?.value || 0;
-    const valueB = stats[b.coin_name]?.value || 0;
+    const valueA = stats[a.coin_name]?.[range]?.value || 0;
+    const valueB = stats[b.coin_name]?.[range]?.value || 0;
     return valueB - valueA; // Sort in descending order
   });
   
   const handleCoinClick = (coin: Coin) => {
     if (selectedCoin && selectedCoin.coin_name === coin.coin_name) {
       setSelectedCoin(null); // Deselect if already selected
+      setSituationSummary("");
     } else {
       setSelectedCoin(coin); // Select the coin
+      
+      // Check if we have cached data
+      if (situationsCache[coin.coin_name]) {
+        setSituationSummary(situationsCache[coin.coin_name]);
+      } else {
+        // Fetch situation resume if not cached
+        setLoadingSituations(true);
+        fetch_coin_situation_resume(props.session_id, coin.coin_name)
+          .then((data) => {
+            // The API now returns a summary string instead of an array of situations
+            const summary = data.summary ?? "No situation summary available for this coin.";
+            // Update cache and state
+            setSituationsCache(prev => ({
+              ...prev,
+              [coin.coin_name]: summary
+            }));
+            setSituationSummary(summary);
+          })
+          .catch((error) => {
+            console.error("Failed to fetch situation summary:", error);
+            setSituationSummary("Failed to load situation summary.");
+          })
+          .finally(() => {
+            setLoadingSituations(false);
+          });
+      }
     }
   };
 
@@ -164,7 +201,7 @@ export function CryptoChart(props: {session_id: string}) {
                   <span className="font-medium ml-2">{coin.coin_name}</span>
                   <div className="ml-auto flex flex-col items-end">
                     <span className="font-bold text-lg">
-                      {stats[coin.coin_name]?.value?.toFixed(2) ?? "-"} €
+                      {stats[coin.coin_name]?.[range]?.value?.toFixed(2) ?? "-"} €
                     </span>
                   </div>
                 </div>
@@ -252,35 +289,55 @@ export function CryptoChart(props: {session_id: string}) {
                 
                 <div className="flex items-baseline gap-3 mb-4">
                   <span className="text-3xl font-bold">
-                    {stats[selectedCoin.coin_name]?.value?.toFixed(2) ?? "-"} €
+                    {stats[selectedCoin.coin_name]?.[range]?.value?.toFixed(2) ?? "-"} €
                   </span>
                   
                 </div>
                 
                 {/* Historical performance summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                   {ranges.map(r => (
-                    <div key={r} className="bg-gray-100 dark:bg-slate-800 p-3 rounded-lg">
+                    <div 
+                      key={r} 
+                      className="bg-gray-100 dark:bg-slate-800 p-3 rounded-lg"
+                    >
                       <div className="text-sm text-gray-500 dark:text-gray-400">{r} Change</div>
                       <div
                         className={`text-lg font-semibold ${
-                          stats[selectedCoin.coin_name]?.change >= 0
+                          stats[selectedCoin.coin_name]?.[r]?.change >= 0
                             ? "text-green-600"
                             : "text-red-600"
                         }`}
                       >
-                        {stats[selectedCoin.coin_name]?.change >= 0 ? "+" : ""}
-                        {stats[selectedCoin.coin_name]?.change?.toFixed(2)}%
+                        {stats[selectedCoin.coin_name]?.[r]?.change >= 0 ? "+" : ""}
+                        {stats[selectedCoin.coin_name]?.[r]?.change?.toFixed(2)}%
                       </div>
                     </div>
                   ))}
                 </div>
                 
                 {/* Description - Use fetched description if available */}
-                <p className="text-gray-600 dark:text-gray-300">
-                    {selectedCoin.description}
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  {selectedCoin.description}
                 </p>
               </div>
+            </div>
+
+            {/* Situation Summary - Updated to display a single text summary */}
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-bold text-lg mb-3">Situation Summary</h4>
+              
+              {loadingSituations ? (
+                <div className="py-8 flex justify-center">
+                  <div className="animate-spin h-6 w-6 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                </div>
+              ) : (
+                <Card className="p-4 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+                  <p className="text-sm leading-relaxed whitespace-pre-line">
+                    {situationSummary}
+                  </p>
+                </Card>
+              )}
             </div>
           </CardContent>
         </Card>
