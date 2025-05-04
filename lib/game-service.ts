@@ -131,4 +131,30 @@ export async function fetch_user_info(userName: string): Promise<UserInfo> {
     throw new Error(`Failed to fetch user info: ${res.status} ${res.statusText}`);
   }
   return res.json();
+}
+
+export type SituationResume = {
+  coin_name: string;
+  summary: string;
+};
+
+export async function fetch_coin_situation_resume(sessionId: string, coinName: string): Promise<SituationResume> {
+  if (coinName === "") {
+    return {
+      coin_name: "",
+      summary: "",
+    };
+  }
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.38.220:8000/api";
+  const url = `${baseUrl}/game/${sessionId}/coin/${coinName}/situation_summary/`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch coin situation resume: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
 } 
