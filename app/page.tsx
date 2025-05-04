@@ -64,10 +64,10 @@ export default function MainPage() {
       <h1 className="text-6xl md:text-8xl font-extrabold text-center text-primary drop-shadow-lg mb-12">
         Coinpetition
       </h1>
-      <div className="flex flex-col items-center w-full max-w-md gap-4">
-        <div className="flex w-full gap-2">
-          <div className="flex flex-col w-full gap-2">
-            <div className="flex w-full gap-2">
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="Player name"
